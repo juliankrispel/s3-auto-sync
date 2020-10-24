@@ -1,6 +1,6 @@
 on: 
   release:
-    types: [published, deleted]
+    types: [published]
 
 name: Publish npm package
 jobs:
