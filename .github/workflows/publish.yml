@@ -29,5 +29,6 @@ jobs:
 
       - uses: JS-DevTools/npm-publish@v1
         with:
+          check-version: true
           token: ${{ secrets.NPM_TOKEN }}
 
