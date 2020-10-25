@@ -1,6 +1,6 @@
 {
   "name": "s3-auto-sync",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Watch and sync folder to s3",
   "bin": "bin/index.js",
   "main": "bin/index.js",
