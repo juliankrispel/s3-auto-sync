@@ -1,6 +1,6 @@
 {
   "name": "s3-auto-sync",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Watch and sync folder to s3",
   "bin": "bin/index.js",
   "main": "bin/index.js",
@@ -13,11 +13,13 @@
   "license": "MIT",
   "devDependencies": {
     "@types/aws-sdk": "^2.7.0",
+    "@types/chalk": "^2.2.0",
     "@types/commander": "^2.12.2",
     "@types/inquirer": "^7.3.1",
     "typescript": "^4.0.3"
   },
   "dependencies": {
+    "chalk": "^4.1.0",
     "aws-sdk": "^2.773.0",
     "chokidar": "^3.4.3",
     "commander": "^6.1.0",

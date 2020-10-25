@@ -41,37 +41,53 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var s3_1 = __importDefault(require("aws-sdk/clients/s3"));
+var sts_1 = __importDefault(require("aws-sdk/clients/sts"));
 var aws_sdk_1 = __importDefault(require("aws-sdk"));
 var chokidar_1 = __importDefault(require("chokidar"));
 var fs_1 = require("fs");
 var path_1 = __importDefault(require("path"));
 var commander_1 = require("commander");
 var inquirer_1 = __importDefault(require("inquirer"));
-var iam = new aws_sdk_1.default.IAM();
+var chalk_1 = __importDefault(require("chalk"));
+var sts = new sts_1.default();
+var fileCreds = new aws_sdk_1.default.SharedIniFileCredentials();
 var _a = require('../package'), version = _a.version, name = _a.name;
 inquirer_1.default.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
-console.info(name + "@" + version);
+console.clear();
+console.log(chalk_1.default.green("running " + name + "@" + version));
 var s3 = new s3_1.default();
 var bucketReg = /(?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)/;
 function getBucketNames() {
     return __awaiter(this, void 0, void 0, function () {
-        var Buckets;
+        var Buckets, buckets;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, s3.listBuckets().promise()];
                 case 1:
                     Buckets = (_a.sent()).Buckets;
-                    return [2 /*return*/, (Buckets || []).map(function (b) { return b.Name; })];
+                    buckets = Buckets != null ?
+                        (Buckets
+                            .filter(function (bucket) { return bucket != null && bucket.Name != null; })
+                            .map(function (b) { return b.Name; }))
+                        : null;
+                    if (buckets == null) {
+                        return [2 /*return*/, []];
+                    }
+                    else {
+                        return [2 /*return*/, buckets];
+                    }
+                    return [2 /*return*/];
             }
         });
     });
 }
-function createBucket(name) {
+function createBucket(_a) {
+    var name = _a.name, region = _a.region;
     return __awaiter(this, void 0, void 0, function () {
         var Bucket, bucketName, err_1, bucket, bucketName;
         var _this = this;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     if (!!name) return [3 /*break*/, 6];
                     return [4 /*yield*/, inquirer_1.default.prompt([{
@@ -87,28 +103,32 @@ function createBucket(name) {
                                 }); }
                             }])];
                 case 1:
-                    bucketName = (_a.sent()).bucketName;
-                    _a.label = 2;
+                    bucketName = (_b.sent()).bucketName;
+                    _b.label = 2;
                 case 2:
-                    _a.trys.push([2, 4, , 5]);
+                    _b.trys.push([2, 4, , 5]);
+                    console.log(chalk_1.default.green("Creating bucket " + bucketName + " in region: " + region));
                     return [4 /*yield*/, s3.createBucket({
-                            Bucket: bucketName
+                            Bucket: bucketName,
+                            CreateBucketConfiguration: {
+                                LocationConstraint: region
+                            }
                         }).promise()];
                 case 3:
-                    _a.sent();
+                    _b.sent();
                     return [3 /*break*/, 5];
                 case 4:
-                    err_1 = _a.sent();
-                    console.error(err_1.message);
-                    bucketName = createBucket(name);
+                    err_1 = _b.sent();
+                    console.log(chalk_1.default.red(err_1.message));
+                    bucketName = createBucket({ name: name, region: region });
                     return [3 /*break*/, 5];
                 case 5: return [2 /*return*/, bucketName];
                 case 6:
                     if (!!bucketReg.test(name)) return [3 /*break*/, 8];
                     console.error('must be a valid bucket name -> https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html');
-                    return [4 /*yield*/, createBucket()];
+                    return [4 /*yield*/, createBucket({ region: region })];
                 case 7:
-                    bucket = _a.sent();
+                    bucket = _b.sent();
                     return [2 /*return*/, bucket];
                 case 8:
                     bucketName = name;
@@ -116,46 +136,54 @@ function createBucket(name) {
                             Bucket: name
                         }).promise()];
                 case 9:
-                    _a.sent();
+                    _b.sent();
                     return [2 /*return*/, bucketName];
             }
         });
     });
 }
-function makeBucketName(name) {
+function makeBucketName(_a) {
+    var name = _a.name, region = _a.region;
     return __awaiter(this, void 0, void 0, function () {
-        var bucketName, useExisting, bucketName, bucketNames, bucketName;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var bucketName, createNew, bucketName, buckets_1, bucketName;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     if (!(name != null)) return [3 /*break*/, 2];
-                    return [4 /*yield*/, createBucket(name)];
+                    return [4 /*yield*/, createBucket({ name: name, region: region })];
                 case 1:
-                    bucketName = _a.sent();
+                    bucketName = _b.sent();
                     return [2 /*return*/, bucketName];
                 case 2: return [4 /*yield*/, inquirer_1.default.prompt([{
                             type: 'confirm',
-                            message: 'Would you like choose an existing bucket? (no to create one)',
-                            name: 'useExisting',
+                            message: 'Would you like a new bucket?',
+                            name: 'createNew',
                         }])];
                 case 3:
-                    useExisting = (_a.sent()).useExisting;
-                    if (!!useExisting) return [3 /*break*/, 5];
-                    return [4 /*yield*/, createBucket()];
+                    createNew = (_b.sent()).createNew;
+                    if (!createNew) return [3 /*break*/, 5];
+                    return [4 /*yield*/, createBucket({ region: region })];
                 case 4:
-                    bucketName = _a.sent();
+                    bucketName = _b.sent();
                     return [2 /*return*/, bucketName];
                 case 5: return [4 /*yield*/, getBucketNames()];
                 case 6:
-                    bucketNames = _a.sent();
+                    buckets_1 = _b.sent();
                     return [4 /*yield*/, inquirer_1.default.prompt([{
-                                type: 'list',
+                                type: 'autocomplete',
                                 name: 'bucketName',
-                                description: 'Which bucket would you like to upload to',
-                                choices: bucketNames
+                                message: 'Which s3 bucket would you like to sync?',
+                                source: function (answersSoFar, input) {
+                                    if (typeof input == 'string' && input.length > 0) {
+                                        return buckets_1.filter(function (bucket) { return bucket.includes(input); });
+                                    }
+                                    else {
+                                        return buckets_1;
+                                    }
+                                }
                             }])];
                 case 7:
-                    bucketName = (_a.sent()).bucketName;
+                    bucketName = (_b.sent()).bucketName;
                     return [2 /*return*/, bucketName];
             }
         });
@@ -172,7 +200,7 @@ function makeDir(dirName) {
                     return [4 /*yield*/, inquirer_1.default.prompt([{
                                 type: 'autocomplete',
                                 name: 'dir',
-                                message: 'Select a directory to watch',
+                                message: 'Select a path to watch (Can be file or folder)',
                                 source: function (answersSoFar, input) { return __awaiter(_this, void 0, void 0, function () {
                                     var _input, dirname, possibleMatches, dirs;
                                     return __generator(this, function (_a) {
@@ -188,7 +216,7 @@ function makeDir(dirName) {
                                                     var name = path_1.default.relative(dirname, input || '');
                                                     return file.includes(name);
                                                 });
-                                                return [2 /*return*/, dirs];
+                                                return [2 /*return*/, ['.'].concat(dirs)];
                                         }
                                     });
                                 }); }
@@ -210,12 +238,14 @@ function makeDir(dirName) {
         });
     });
 }
-function renderProgress(prog) {
+function renderProgress(_a) {
+    var bucket = _a.bucket, dir = _a.dir, files = _a.files;
     return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
+        return __generator(this, function (_b) {
             console.clear();
-            Object.keys(prog).forEach(function (key) {
-                console.log(key + ": " + prog[key]);
+            console.log(chalk_1.default.grey('s3-auto-sync: ') + " " + dir + " > s3://" + bucket);
+            Object.keys(files).forEach(function (key) {
+                console.log(key + ": " + chalk_1.default.white(files[key]));
             });
             return [2 /*return*/];
         });
@@ -236,7 +266,7 @@ function watchAndSync(Bucket, dir) {
                             file = fs_1.createReadStream(path);
                             Key = path_1.default.relative(dir, path);
                             files[Key] = '0%';
-                            renderProgress(files);
+                            renderProgress({ bucket: Bucket, dir: dir, files: files });
                             upload = new s3_1.default.ManagedUpload({
                                 params: {
                                     Bucket: Bucket,
@@ -247,13 +277,10 @@ function watchAndSync(Bucket, dir) {
                             upload.on('httpUploadProgress', function (prog) {
                                 var percent = Math.round((prog.loaded / prog.total) * 100);
                                 files[Key] = percent + "%";
-                                renderProgress(files);
+                                renderProgress({ bucket: Bucket, dir: dir, files: files });
                             });
                             upload.send();
-                            return [4 /*yield*/, upload.promise()
-                                //console.log({ uploading: path })
-                                //console.info({ uploaded: path })
-                            ];
+                            return [4 /*yield*/, upload.promise()];
                         case 1:
                             _a.sent();
                             return [2 /*return*/];
@@ -272,7 +299,7 @@ function watchAndSync(Bucket, dir) {
                         case 1:
                             _a.sent();
                             files[Key] = "Removed";
-                            renderProgress(files);
+                            renderProgress({ bucket: Bucket, dir: dir, files: files });
                             return [2 /*return*/];
                     }
                 });
@@ -283,23 +310,27 @@ function watchAndSync(Bucket, dir) {
 }
 function run() {
     return __awaiter(this, void 0, void 0, function () {
-        var options, dirName, bucketName;
+        var id, options, region, dirName, bucketName;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    // const user = await iam.getUser().promise()
-                    // console.log(user)
+                case 0: return [4 /*yield*/, sts.getCallerIdentity().promise()];
+                case 1:
+                    id = _a.sent();
                     commander_1.program
+                        .option('-r --region <region>')
                         .option('-d --dir <dir>')
                         .option('-b --bucket <bucket>')
                         .parse(process.argv);
                     options = commander_1.program.opts();
-                    console.log(options.bucket);
+                    region = options.region != null ? options.region : process.env.AWS_REGION;
+                    if (region == null) {
+                        throw new Error("AWS_REGION env is not set");
+                    }
                     return [4 /*yield*/, makeDir(options.dir)];
-                case 1:
-                    dirName = _a.sent();
-                    return [4 /*yield*/, makeBucketName(options.bucket)];
                 case 2:
+                    dirName = _a.sent();
+                    return [4 /*yield*/, makeBucketName({ region: region, name: options.bucket })];
+                case 3:
                     bucketName = _a.sent();
                     watchAndSync(bucketName, dirName);
                     return [2 /*return*/];

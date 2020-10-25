@@ -1,26 +1,43 @@
 #!/usr/bin/env node
 import S3 from 'aws-sdk/clients/s3'
+import STS from 'aws-sdk/clients/sts'
 import AWS from 'aws-sdk'
 import chokidar from 'chokidar'
 import { promises as fs, createReadStream } from 'fs'
-import p  from 'path'
+import p from 'path'
 import { program } from 'commander'
 import inquirer from 'inquirer'
+import c from 'chalk'
 
-const iam = new AWS.IAM()
+const sts = new STS()
+
+const fileCreds = new AWS.SharedIniFileCredentials()
 const { version, name } = require('../package')
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
-console.info(`${name}@${version}`)
+console.clear()
+console.log(c.green(`running ${name}@${version}`))
+
 const s3 = new S3()
 const bucketReg = /(?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)/
 
 async function getBucketNames() {
   const { Buckets } = await s3.listBuckets().promise()
-  return (Buckets || []).map((b) => b.Name)
+  const buckets = Buckets != null ?
+    (Buckets
+    .filter(bucket => bucket != null && bucket.Name != null)
+    .map(b => b.Name)) as string[]
+     : null
+
+  if (buckets == null) {
+    return []
+  } else {
+    return buckets
+  }
+
 }
 
-async function createBucket (name?: string): Promise<string> {
+async function createBucket ({ name, region }: { name?: string, region: string }): Promise<string> {
   let Bucket
   if (!name) {
     let { bucketName } = await inquirer.prompt([{
@@ -34,17 +51,21 @@ async function createBucket (name?: string): Promise<string> {
       }
     }])
     try {
+      console.log(c.green(`Creating bucket ${bucketName} in region: ${region}`))
       await s3.createBucket({
-        Bucket: bucketName
+        Bucket: bucketName,
+        CreateBucketConfiguration: {
+          LocationConstraint: region
+        }
       }).promise()
     } catch (err) {
-      console.error(err.message)
-      bucketName = createBucket(name) 
+      console.log(c.red(err.message))
+      bucketName = createBucket({ name, region }) 
     }
     return bucketName
   } else if (!bucketReg.test(name)) {
     console.error('must be a valid bucket name -> https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html')
-    const bucket = await createBucket()
+    const bucket = await createBucket({ region })
     return bucket
   } else {
     let bucketName: string = name
@@ -55,29 +76,36 @@ async function createBucket (name?: string): Promise<string> {
   }
 }
 
-async function makeBucketName(name?: string) {
+async function makeBucketName({ name, region }: { name?: string, region: string, }) {
   if (name != null) {
-    const bucketName = await createBucket(name)
+    const bucketName = await createBucket({ name, region })
     return bucketName
   } else {
 
-    const { useExisting } = await inquirer.prompt([{
+    const { createNew } = await inquirer.prompt([{
       type: 'confirm',
-      message: 'Would you like choose an existing bucket? (no to create one)',
-      name: 'useExisting',
+      message: 'Would you like a new bucket?',
+      name: 'createNew',
     }])
 
-    if (!useExisting) {
-      const bucketName = await createBucket()
+    if (createNew) {
+      const bucketName = await createBucket({ region })
       return bucketName
     } else {
-      const bucketNames = await getBucketNames()
-      const { bucketName } = await inquirer.prompt([{
-        type: 'list',
-        name: 'bucketName',
-        description: 'Which bucket would you like to upload to',
-        choices: bucketNames
-      }])
+
+    const buckets = await getBucketNames()
+    const { bucketName } = await inquirer.prompt([{
+      type: 'autocomplete',
+      name: 'bucketName',
+      message: 'Which s3 bucket would you like to sync?',
+      source: (answersSoFar: any, input: any) => {
+        if (typeof input == 'string' && input.length > 0) {
+          return buckets.filter((bucket: string) => bucket.includes(input))
+        } else {
+          return buckets
+        }
+      }
+    }])
       return bucketName
     }
   }
@@ -88,7 +116,7 @@ async function makeDir(dirName?: string): Promise<string> {
     const { dir } = await inquirer.prompt([{
       type: 'autocomplete',
       name: 'dir',
-      message: 'Select a directory to watch',
+      message: 'Select a path to watch (Can be file or folder)',
       source: async (answersSoFar: any, input: any) => {
         const _input = input || '.'
         const dirname = p.dirname(_input.replace(/\/$/, '/.'))
@@ -99,7 +127,7 @@ async function makeDir(dirName?: string): Promise<string> {
             return file.includes(name)
           })
 
-        return dirs
+        return ['.'].concat(dirs)
       }
     }])
 
@@ -119,10 +147,11 @@ type Progress = {
   [key: string]: string
 }
 
-async function renderProgress(prog: Progress) {
+async function renderProgress({ bucket, dir, files }: { bucket: string, dir: string, files: Progress }) {
   console.clear()
-  Object.keys(prog).forEach(key => {
-    console.log(`${key}: ${prog[key]}`)
+  console.log(`${c.grey('s3-auto-sync: ')} ${dir} > s3://${bucket}`)
+  Object.keys(files).forEach(key => {
+    console.log(`${key}: ${c.white(files[key])}`)
   })
 }
 
@@ -134,7 +163,7 @@ async function watchAndSync(Bucket: string, dir: string) {
     const file = createReadStream(path)
     const Key = p.relative(dir, path)
     files[Key] = '0%'
-    renderProgress(files)
+    renderProgress({ bucket: Bucket , dir, files })
     const upload = new S3.ManagedUpload({
       params: {
         Bucket,
@@ -145,12 +174,10 @@ async function watchAndSync(Bucket: string, dir: string) {
     upload.on('httpUploadProgress', (prog) => {
       const percent = Math.round((prog.loaded / prog.total) * 100)
       files[Key] = `${percent}%`
-      renderProgress(files)
+      renderProgress({ bucket: Bucket , dir, files })
     })
     upload.send()
     await upload.promise()
-    //console.log({ uploading: path })
-    //console.info({ uploaded: path })
   }).on('unlink', async (path) => {
     const Key = p.relative(dir, path)
 
@@ -159,23 +186,27 @@ async function watchAndSync(Bucket: string, dir: string) {
       Key: path
     }).promise()
     files[Key] = `Removed`
-    renderProgress(files)
+    renderProgress({ bucket: Bucket , dir, files })
   });
 }
 
+
 async function run () {
-  // const user = await iam.getUser().promise()
-  // console.log(user)
+  const id = await sts.getCallerIdentity().promise()
 
   program
+    .option('-r --region <region>')
     .option('-d --dir <dir>')
     .option('-b --bucket <bucket>')
     .parse(process.argv);
 
-  const options: { bucket?: string, dir?: string} = program.opts()
-  console.log(options.bucket)
+  const options: { bucket?: string, dir?: string, region?: string} = program.opts()
+  const region = options.region != null ? options.region : process.env.AWS_REGION;
+  if (region == null) {
+    throw new Error("AWS_REGION env is not set")
+  }
   const dirName = await makeDir(options.dir)
-  const bucketName = await makeBucketName(options.bucket)
+  const bucketName = await makeBucketName({ region, name: options.bucket })
   watchAndSync(bucketName, dirName)
 }
 

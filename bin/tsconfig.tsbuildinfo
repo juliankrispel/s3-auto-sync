@@ -236,6 +236,11 @@
         "signature": "59e2726dd4e064312b5cbaecf6b3a5eef25e41bac5a47751b751efede6dcde4e",
         "affectsGlobalScope": false
       },
+      "../node_modules/aws-sdk/clients/sts.d.ts": {
+        "version": "bbd1961be914deb87e32ccb70d07a4314c88a789419d77e41666fcafe6ea02cf",
+        "signature": "bbd1961be914deb87e32ccb70d07a4314c88a789419d77e41666fcafe6ea02cf",
+        "affectsGlobalScope": false
+      },
       "../node_modules/aws-sdk/clients/acm.d.ts": {
         "version": "899c07ecd9e7526524c30231d7b13910010c03b0005f37f1307edd8910cb36fa",
         "signature": "899c07ecd9e7526524c30231d7b13910010c03b0005f37f1307edd8910cb36fa",
@@ -719,11 +724,6 @@
       "../node_modules/aws-sdk/clients/stepfunctions.d.ts": {
         "version": "89e118da6eb5f29bd5d4b0f3ef2cffebf564e2957b7cb7459debf2900ecbdc19",
         "signature": "89e118da6eb5f29bd5d4b0f3ef2cffebf564e2957b7cb7459debf2900ecbdc19",
-        "affectsGlobalScope": false
-      },
-      "../node_modules/aws-sdk/clients/sts.d.ts": {
-        "version": "bbd1961be914deb87e32ccb70d07a4314c88a789419d77e41666fcafe6ea02cf",
-        "signature": "bbd1961be914deb87e32ccb70d07a4314c88a789419d77e41666fcafe6ea02cf",
         "affectsGlobalScope": false
       },
       "../node_modules/aws-sdk/clients/support.d.ts": {
@@ -2231,8 +2231,13 @@
         "signature": "0d04746f0d66d61071b401646135da06084b4fc890e81a3a6641810f14f7cd90",
         "affectsGlobalScope": false
       },
+      "../node_modules/chalk/index.d.ts": {
+        "version": "0d14fa22c41fdc7277e6f71473b20ebc07f40f00e38875142335d5b63cdfc9d2",
+        "signature": "0d14fa22c41fdc7277e6f71473b20ebc07f40f00e38875142335d5b63cdfc9d2",
+        "affectsGlobalScope": false
+      },
       "../src/index.ts": {
-        "version": "ae8c4958cb11a553e7b5cb0bd754d560d6a5584a5137d97517979ac88e1b8b04",
+        "version": "d641f2726a7397aa1c1b9e0e34b00f2d86f3edd13b593ad629df77c0537a8a1c",
         "signature": "43e818adf60173644896298637f47b01d5819b17eda46eaa32d0c7d64724d012",
         "affectsGlobalScope": false
       }
@@ -4931,7 +4936,9 @@
         "../node_modules/@types/node/fs.d.ts",
         "../node_modules/@types/node/path.d.ts",
         "../node_modules/aws-sdk/clients/s3.d.ts",
+        "../node_modules/aws-sdk/clients/sts.d.ts",
         "../node_modules/aws-sdk/index.d.ts",
+        "../node_modules/chalk/index.d.ts",
         "../node_modules/chokidar/types/index.d.ts",
         "../node_modules/commander/typings/index.d.ts"
       ]
@@ -7961,6 +7968,7 @@
       "../node_modules/aws-sdk/lib/services/polly.d.ts",
       "../node_modules/aws-sdk/lib/services/s3.d.ts",
       "../node_modules/aws-sdk/lib/shared-ini/ini-loader.d.ts",
+      "../node_modules/chalk/index.d.ts",
       "../node_modules/chokidar/types/index.d.ts",
       "../node_modules/commander/typings/index.d.ts",
       "../node_modules/rxjs/index.d.ts",
