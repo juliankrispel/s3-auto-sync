@@ -322,10 +322,18 @@ function run() {
                         .option('-b --bucket <bucket>')
                         .parse(process.argv);
                     options = commander_1.program.opts();
-                    region = options.region != null ? options.region : process.env.AWS_REGION;
+                    region = options.region;
                     if (region == null) {
-                        throw new Error("AWS_REGION env is not set");
+                        console.log(chalk_1.default.yellow('Warning: Missing --region argument, defaulting to AWS_REGION env variable'));
                     }
+                    if (options.region == null && process.env.AWS_REGION == null) {
+                        console.log(chalk_1.default.red('Error: Missing AWS_REGION env variable as well as --region argument, cannot set region'));
+                        return [2 /*return*/];
+                    }
+                    else {
+                        region = process.env.AWS_REGION;
+                    }
+                    if (!(region != null)) return [3 /*break*/, 4];
                     return [4 /*yield*/, makeDir(options.dir)];
                 case 2:
                     dirName = _a.sent();
@@ -333,7 +341,8 @@ function run() {
                 case 3:
                     bucketName = _a.sent();
                     watchAndSync(bucketName, dirName);
-                    return [2 /*return*/];
+                    _a.label = 4;
+                case 4: return [2 /*return*/];
             }
         });
     });

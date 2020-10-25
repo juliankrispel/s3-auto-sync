@@ -13,6 +13,7 @@ const sts = new STS()
 
 const fileCreds = new AWS.SharedIniFileCredentials()
 const { version, name } = require('../package')
+
 inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
 console.clear()
@@ -201,13 +202,22 @@ async function run () {
     .parse(process.argv);
 
   const options: { bucket?: string, dir?: string, region?: string} = program.opts()
-  const region = options.region != null ? options.region : process.env.AWS_REGION;
+  let region: string | undefined = options.region
   if (region == null) {
-    throw new Error("AWS_REGION env is not set")
+    console.log(c.yellow('Warning: Missing --region argument, defaulting to AWS_REGION env variable'))
   }
-  const dirName = await makeDir(options.dir)
-  const bucketName = await makeBucketName({ region, name: options.bucket })
-  watchAndSync(bucketName, dirName)
+  if (options.region == null && process.env.AWS_REGION == null) {
+    console.log(c.red('Error: Missing AWS_REGION env variable as well as --region argument, cannot set region'))
+    return ;
+  } else {
+    region = process.env.AWS_REGION
+  }
+
+  if (region != null) {
+    const dirName = await makeDir(options.dir)
+    const bucketName = await makeBucketName({ region, name: options.bucket })
+    watchAndSync(bucketName, dirName)
+  }
 }
 
 run()
