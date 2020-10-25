@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.2] - 25-10-2020
+## [0.0.3] - 25-10-2020
 
 ### Added
 
@@ -14,6 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Option `-r --region` option because it is extremely important for upload speeds - duh
 - autocomplete for bucket choice - (much more convenient than a list)
 
-## [0.0.1] - 24-10-2020
+## [0.0.2] - 24-10-2020
 
-Alpha release - Bare functionality to work
+Initial release - Basic functionality working
