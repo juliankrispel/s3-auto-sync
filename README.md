@@ -26,3 +26,7 @@ If the folder is new, the cli will ask if you want to create one
 -d -dir     # directory to be watched
 -b -bucket  # bucket name to upload to
 ```
+
+---
+
+Made by [Julian](https://jkrsp.com/).
