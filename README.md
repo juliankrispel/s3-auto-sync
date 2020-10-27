@@ -1,6 +1,8 @@
 # s3-auto-sync
 
-DISCLAIMER: Alpha software, use at own risk. Feedback welcome, just open an issue 🙏
+Watches a folder and syncs it to an s3 bucket of your choice. 
+
+![demo](s3-auto-sync.gif)
 
 ### Pre-requisites
 

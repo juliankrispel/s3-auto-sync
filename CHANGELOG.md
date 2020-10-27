@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 27-10-2020
+
+### Changed
+
+- Better error message when region is not selected
+
 ## [0.1.0] - 25-10-2020
 
 ### Added

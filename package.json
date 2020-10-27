@@ -1,9 +1,12 @@
 {
   "name": "s3-auto-sync",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Watch and sync folder to s3",
   "bin": "bin/index.js",
   "main": "bin/index.js",
+  "repository": {
+    "url": "https://github.com/juliankrispel/s3-auto-sync"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch": "tsc -w",
@@ -24,7 +27,6 @@
     "chokidar": "^3.4.3",
     "commander": "^6.1.0",
     "inquirer-autocomplete-prompt": "^1.2.0",
-    "cli-progress": "^3.8.2",
     "inquirer": "^7.3.3"
   }
 }

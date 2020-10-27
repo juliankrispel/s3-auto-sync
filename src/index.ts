@@ -206,17 +206,17 @@ async function run () {
   if (region == null) {
     console.log(c.yellow('Warning: Missing --region argument, defaulting to AWS_REGION env variable'))
   }
-  if (options.region == null && process.env.AWS_REGION == null) {
-    console.log(c.red('Error: Missing AWS_REGION env variable as well as --region argument, cannot set region'))
-    return ;
-  } else {
+  if (options.region == null ) {
     region = process.env.AWS_REGION
-  }
+  } 
 
   if (region != null) {
     const dirName = await makeDir(options.dir)
     const bucketName = await makeBucketName({ region, name: options.bucket })
     watchAndSync(bucketName, dirName)
+  } else {
+    console.log(c.red('Error: Missing AWS_REGION env variable as well as --region argument, cannot set region'))
+    return 
   }
 }
 
