@@ -71,7 +71,10 @@ async function createBucket ({ name, region }: { name?: string, region: string }
   } else {
     let bucketName: string = name
     await s3.createBucket({
-      Bucket: name
+      Bucket: name,
+        CreateBucketConfiguration: {
+          LocationConstraint: region
+        }
     }).promise()
     return bucketName
   }
